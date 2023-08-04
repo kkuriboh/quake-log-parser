@@ -1,5 +1,7 @@
 type record =
   | Kill of kill
+  | ClientConnect of int
+  | ClientUserInfoChanged of int * string
   | InitGame
   | ShutdownGame
 

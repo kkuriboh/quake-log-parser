@@ -49,6 +49,31 @@ let kill_record =
 let init_game_record = string "InitGame:" *> ws *> many any_char >>| fun _ -> InitGame
 let shutdown_game_record = string "ShutdownGame:" *> ws >>| fun _ -> ShutdownGame
 
+let client_connect_record =
+  string "ClientConnect:" *> ws *> numeric >>| fun id -> ClientConnect (int_of_string id)
+;;
+
+let client_user_info_changed_record =
+  string "ClientUserInfoChanged:" *> ws *> numeric
+  <* ws
+  <* many any_char
+  >>| fun id -> ClientConnect (int_of_string id)
+;;
+
 let records =
-  timestamp *> ws *> choice [ kill_record; init_game_record; shutdown_game_record ]
+  timestamp
+  *> ws
+  *> choice
+       [ kill_record
+       ; client_connect_record
+       ; client_user_info_changed_record
+       ; init_game_record
+       ; shutdown_game_record
+       ]
+;;
+
+let apply str =
+  match parse_string ~consume:All records str with
+  | Ok record -> record
+  | Error e -> failwith e
 ;;
