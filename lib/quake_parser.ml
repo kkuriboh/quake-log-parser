@@ -1,13 +1,7 @@
 open Batteries
 open Angstrom
-
-let mapi f lst =
-  let rec mapi i = function
-    | [] -> []
-    | x :: xs -> f x i @ mapi (i + 1) xs
-  in
-  mapi 0 lst
-;;
+open Means_of_death
+open Statements
 
 let ( << ) f g x = f (g x)
 let ( <&> ) p1 p2 = p1 >>= fun x -> p2 >>| fun y -> x, y
@@ -38,16 +32,10 @@ let alpha_numeric =
 
 let timestamp = ws *> numeric <* char ':' <&> numeric
 let nickname = many1 any_char >>| String.of_list
+let pmod = many1 any_char >>| (string_to_mod << String.of_list)
 
 let kill_record =
-  timestamp
-  *> ws
-  *> string "Kill:"
-  *> ws
-  *> skip_many (numeric *> ws)
-  *> char ':'
-  *> ws
-  *> nickname
+  string "Kill:" *> ws *> skip_many (numeric *> ws) *> char ':' *> ws *> nickname
   <* ws
   <* string "killed"
   <* ws
@@ -55,5 +43,13 @@ let kill_record =
   <* ws
   <* string "by"
   <* ws
-  <&> nickname (* TODO: replace with means of death *)
+  <&> pmod
+  >>| fun ((killer, killed), mean_of_death) -> Kill { killer; killed; mean_of_death }
+;;
+
+let init_game_record = string "InitGame:" *> ws *> many any_char >>| fun _ -> InitGame
+let shutdown_game_record = string "ShutdownGame:" *> ws >>| fun _ -> ShutdownGame
+
+let records =
+  timestamp *> ws *> choice [ kill_record; init_game_record; shutdown_game_record ]
 ;;
