@@ -72,8 +72,4 @@ let records =
        ]
 ;;
 
-let apply str =
-  match parse_string ~consume:All records str with
-  | Ok record -> record
-  | Error e -> failwith e
-;;
+let apply str = parse_string ~consume:All records str

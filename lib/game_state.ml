@@ -2,9 +2,11 @@ open Batteries
 open Statements
 module SContext = Map.Make (String)
 module IContext = Map.Make (Int)
+module MODContext = Map.Make (Means_of_death)
 
 type game =
   { total_kills : int
+  ; kills_by_means : int MODContext.t
   ; players : string list
   ; kills : int SContext.t
   }
@@ -27,11 +29,19 @@ let update_state s = function
         let killer = SContext.find k.killer curr_game.kills in
         { curr_game with kills = SContext.add k.killer (killer + 1) curr_game.kills })
     in
+    let mod' =
+      match MODContext.find_opt k.mean_of_death curr_game.kills_by_means with
+      | Some value -> value + 1
+      | None -> 1
+    in
     { s with
       games =
         IContext.add
           s.current_game
-          { curr_game with total_kills = curr_game.total_kills + 1 }
+          { curr_game with
+            total_kills = curr_game.total_kills + 1
+          ; kills_by_means = MODContext.add k.mean_of_death mod' curr_game.kills_by_means
+          }
           s.games
     }
   | InitGame ->
@@ -39,7 +49,11 @@ let update_state s = function
       s.games
       |> IContext.add
            s.current_game
-           { total_kills = 0; players = []; kills = SContext.empty }
+           { total_kills = 0
+           ; kills_by_means = MODContext.empty
+           ; players = []
+           ; kills = SContext.empty
+           }
     in
     { s with games }
   | ShutdownGame -> { s with current_game = s.current_game + 1 }

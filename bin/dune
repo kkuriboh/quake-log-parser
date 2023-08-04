@@ -1,4 +1,4 @@
 (executable
  (public_name quake_parser)
  (name main)
- (libraries quake_parser))
+ (libraries quake_parser batteries))

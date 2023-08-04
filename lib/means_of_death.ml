@@ -30,6 +30,9 @@ type mod' =
   | MOD_KAMIKAZE
   | MOD_JUICED
   | MOD_GRAPPLE
+[@@deriving compare]
+
+type t = mod' [@@deriving compare]
 
 let pp_mod = function
   | MOD_UNKNOWN -> "MOD_UNKNOWN"
