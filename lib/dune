@@ -1,0 +1,3 @@
+(library
+ (name quake_parser)
+ (libraries angstrom batteries))
