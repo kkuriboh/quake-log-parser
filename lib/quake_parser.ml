@@ -32,7 +32,6 @@ let alpha_numeric =
 
 let timestamp = ws *> numeric <* char ':' <&> numeric
 let nickname = many1 any_char >>| String.of_list
-let pmod = many1 any_char >>| (string_to_mod << String.of_list)
 
 let kill_record =
   string "Kill:" *> ws *> skip_many (numeric *> ws) *> char ':' *> ws *> nickname
@@ -43,7 +42,7 @@ let kill_record =
   <* ws
   <* string "by"
   <* ws
-  <&> pmod
+  <&> p_mod
   >>| fun ((killer, killed), mean_of_death) -> Kill { killer; killed; mean_of_death }
 ;;
 
