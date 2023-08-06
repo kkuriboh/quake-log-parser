@@ -12,6 +12,13 @@ let ws =
     | _ -> false)
 ;;
 
+(* let ws1 = *)
+(*   take_while1 (function *)
+(*     | '\x20' | '\x0a' | '\x0d' | '\x09' -> true *)
+(*     | _ -> false) *)
+(*   >>| fun _ -> () *)
+(* ;; *)
+
 let non_numeric =
   take_while1 (function
     | 'a' .. 'z' | 'A' .. 'Z' -> true
@@ -31,16 +38,29 @@ let alpha_numeric =
 ;;
 
 let timestamp = ws *> numeric <* char ':' <&> numeric
-let nickname = take_till (( = ) ' ')
+
+(* apparently nicknames can contain white spaces and special chars,
+ * so we have to code special cases instead of using a single generic parser *)
+(* let nickname = take_till (( = ) ' ') *)
+let take_till_p p = many_till any_char p >>| String.of_list
+
+let p_mod =
+  take_while1 (function
+    | 'A' .. 'Z' | '_' -> true
+    | _ -> false)
+  >>| Means_of_death.of_string
+;;
 
 let kill_record =
-  string "Kill:" *> ws *> sep_by (char ' ') numeric *> char ':' *> ws *> nickname
+  string "Kill:"
+  *> ws
+  *> sep_by (char ' ') numeric
+  *> ws
+  *> char ':'
+  *> ws
+  *> take_till_p (ws *> string "killed")
   <* ws
-  <* string "killed"
-  <* ws
-  <&> nickname
-  <* ws
-  <* string "by"
+  <&> take_till_p (ws *> string "by")
   <* ws
   <&> p_mod
   >>| fun ((killer, killed), mean_of_death) -> Kill { killer; killed; mean_of_death }
@@ -62,8 +82,11 @@ let client_user_info_changed_record =
   >>| fun (id, nickname) -> ClientUserInfoChanged (int_of_string id, nickname)
 ;;
 
+let dont_care = many any_char >>| fun _ -> Ignore
+
 let records =
-  timestamp
+  ws
+  *> timestamp
   *> ws
   *> choice
        [ kill_record
@@ -74,9 +97,20 @@ let records =
        ]
 ;;
 
-let apply str = parse_string ~consume:All records str
+let apply str = parse_string ~consume:All (records <|> dont_care) str
 
 (* UNIT TESTS *)
+
+let%test _ =
+  match
+    apply "  0:26 Kill: 5 3 7: Assasinu Credi killed Oootsimo by MOD_ROCKET_SPLASH"
+  with
+  | Ok (Kill record)
+    when record.killer = "Assasinu Credi"
+         && record.killed = "Oootsimo"
+         && record.mean_of_death = MOD_ROCKET_SPLASH -> true
+  | _ -> false
+;;
 
 let%test _ =
   match apply " 20:54 Kill: 1022 2 22: <world> killed Isgalamido by MOD_TRIGGER_HURT" with
@@ -115,5 +149,13 @@ let%test _ =
 let%test _ =
   match apply " 1:47 ShutdownGame:" with
   | Ok ShutdownGame -> true
+  | _ -> false
+;;
+
+let%test _ =
+  match
+    apply " 26  0:00 ------------------------------------------------------------"
+  with
+  | Ok Ignore -> true
   | _ -> false
 ;;

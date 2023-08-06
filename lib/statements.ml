@@ -4,6 +4,7 @@ type record =
   | ClientUserInfoChanged of int * string
   | InitGame
   | ShutdownGame
+  | Ignore
 
 and kill =
   { killer : string
