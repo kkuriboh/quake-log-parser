@@ -1,5 +1,6 @@
 open Batteries
 open Quake_parser.Game_state
+open Quake_parser.Stringfy
 
 let () =
   let lines = File.lines_of "qgames.log" in
@@ -12,5 +13,9 @@ let () =
       | Ok r -> state := update_state r !state
       | Error e -> failwith @@ Format.sprintf "%d: %s\n" (idx + 1) e)
     lines;
-  Format.eprintf "FINISHED %d\n" !state.current_game
+  let json = state_to_json !state in
+  let report_file = open_out "report.json" in
+  Printf.fprintf report_file "%s" json;
+  close_out report_file;
+  print_endline json
 ;;
